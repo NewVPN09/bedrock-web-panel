@@ -1,0 +1,7 @@
+body { background:#0f1115; color:#eee; font-family:Arial; padding:20px }
+h1 { margin-bottom:20px }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px }
+.card { background:#151923; padding:15px; border-radius:12px; box-shadow:0 0 10px #000 }
+button, input { padding:8px; margin:5px }
+pre { background:#000; padding:10px; max-height:300px; overflow:auto }
+a { color:#6cf }
