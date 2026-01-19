@@ -7,13 +7,6 @@ if (!isset($_SESSION['auth'])) {
     header('Location: login.php');
     exit;
 }
-
-if(isset($_SESSION['message'])): ?>
-    <div class="message"><?= $_SESSION['message'] ?></div>
-    <?php unset($_SESSION['message']); ?>
-<?php endif; 
-
-    
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -97,6 +90,11 @@ a:hover {
     <a href="logout.php">Logout</a>
 </header>
 
+<?php if(isset($_SESSION['message'])): ?>
+    <div class="message"><?= $_SESSION['message'] ?></div>
+    <?php unset($_SESSION['message']); ?>
+<?php endif; ?>
+    
 <main>
 <div class="grid">
 
