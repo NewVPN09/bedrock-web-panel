@@ -42,21 +42,14 @@ if (!isset($_SESSION['auth'])) {
 
     <!-- RCON Console -->
     <div class="card">
-        <h2>Console (RCON)</h2>
-        <form method="post" action="rcon.php">
-            <input type="hidden" name="csrf" value="<?= csrf_token() ?>">
-            <input name="cmd" placeholder="Command">
-            <button type="submit">Send</button>
-        </form>
-        <pre id="rcon-output">
-            <?php
-            if (isset($_SESSION['rcon_output'])) {
-                echo htmlspecialchars($_SESSION['rcon_output']);
-                unset($_SESSION['rcon_output']);
-            }
-            ?>
-        </pre>
-    </div>
+<h2>Console (RCON)</h2>
+<form method="post" action="rcon.php">
+<input type="hidden" name="csrf" value="<?= csrf_token() ?>">
+<input name="cmd" placeholder="Command">
+<button>Send</button>
+</form>
+</div>
+
 
     <!-- Player List -->
     <div class="card">
