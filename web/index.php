@@ -156,10 +156,41 @@ a:hover {
     </div>
 
     <!-- Logs -->
-    <div class="card">
-        <h2>Logs</h2>
-        <pre><?php include 'logs.php'; ?></pre>
-    </div>
+    <div class="section">
+    <h2>Server Logs</h2>
+    <pre id="terminal-log">Loading logs...</pre>
+</div>
+
+<style>
+#terminal-log {
+    background: #000;
+    color: #0f0;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 14px;
+    line-height: 1.4em;
+    padding: 10px;
+    border-radius: 8px;
+    max-height: 400px;
+    overflow-y: scroll;
+    white-space: pre-wrap;
+}
+</style>
+
+<script>
+// Auto-refresh logs every 2 seconds
+function refreshTerminal() {
+    fetch('logs.php?live=1')
+        .then(res => res.text())
+        .then(txt => {
+            const logEl = document.getElementById('terminal-log');
+            logEl.textContent = txt;
+            logEl.scrollTop = logEl.scrollHeight; // auto-scroll
+        });
+}
+setInterval(refreshTerminal, 2000);
+refreshTerminal();
+</script>
+
 
 </div>
 </main>
