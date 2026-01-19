@@ -4,7 +4,7 @@ require 'csrf.php';
 if (!isset($_SESSION['auth'])) exit;
 
 $dir = $_GET['dir'] ?? '/home/minecraft/Server';
-$dir = realpath($dir); // prevent directory traversal
+$dir = realpath($dir);
 
 if (!$dir || !is_dir($dir)) {
     echo "<p>Invalid directory!</p>";
@@ -25,10 +25,10 @@ foreach ($files as $file) {
     if (is_dir($path)) {
         echo "<li>[DIR] <a href='files.php?dir=$path'>$file</a></li>";
     } else {
-        echo "<li>[FILE] $file - <a href='download.php?file=$path'>Download</a></li>";
+        $csrf = csrf_token();
+        echo "<li>[FILE] $file - <a href='download.php?file=" . urlencode($path) . "&csrf=$csrf'>Download</a></li>";
     }
 }
 echo "</ul>";
-
 echo "<a href='index.php'>Back to panel</a>";
 ?>
