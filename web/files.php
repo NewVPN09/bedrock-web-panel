@@ -1,21 +1,34 @@
 <?php
 session_start();
-require 'config.php';
+require 'csrf.php';
 if (!isset($_SESSION['auth'])) exit;
 
-$base = realpath(SERVER_PATH);
-$path = realpath($_GET['p'] ?? $base);
-if (!$path || strpos($path, $base) !== 0) $path = $base;
+$dir = $_GET['dir'] ?? '/home/minecraft/Server';
+$dir = realpath($dir); // prevent directory traversal
 
-echo "<h2>Files: ".htmlspecialchars($path)."</h2>";
-echo "<pre>";
-
-foreach (scandir($path) as $f) {
-    if ($f === '.') continue;
-    $full = $path.'/'.$f;
-    echo is_dir($full) ? "[DIR] " : "[FILE] ";
-    echo "<a href='?p=".urlencode($full)."'>".htmlspecialchars($f)."</a>\n";
+if (!$dir || !is_dir($dir)) {
+    echo "<p>Invalid directory!</p>";
+    exit;
 }
 
-echo "</pre>";
-echo "<a href='upload.php?p=".urlencode($path)."'>Upload</a>";
+$files = scandir($dir);
+
+echo "<h2>File Manager: $dir</h2>";
+echo "<ul>";
+if ($dir != '/home/minecraft/Server') {
+    $parent = dirname($dir);
+    echo "<li><a href='files.php?dir=$parent'>[..]</a></li>";
+}
+foreach ($files as $file) {
+    if ($file == '.' || $file == '..') continue;
+    $path = $dir . '/' . $file;
+    if (is_dir($path)) {
+        echo "<li>[DIR] <a href='files.php?dir=$path'>$file</a></li>";
+    } else {
+        echo "<li>[FILE] $file - <a href='download.php?file=$path'>Download</a></li>";
+    }
+}
+echo "</ul>";
+
+echo "<a href='index.php'>Back to panel</a>";
+?>
