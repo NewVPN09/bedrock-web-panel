@@ -9,16 +9,10 @@ $action = $_POST['action'] ?? '';
 
 if (!in_array($action, $allowed)) exit("Invalid action");
 
-// Map each action to a non-blocking command
-$cmds = [
-    'start'   => "sudo systemctl start bedrock > /dev/null 2>&1 &",
-    'stop'    => "sudo systemctl stop bedrock > /dev/null 2>&1 &",
-    'restart' => "sudo systemctl restart bedrock > /dev/null 2>&1 &"
-];
+// Run synchronously and capture output/errors
+$output = shell_exec("sudo systemctl $action bedrock 2>&1");
 
-// Execute the command in background
-shell_exec($cmds[$action]);
-
-// Redirect back immediately
+// Return result and redirect back
+$_SESSION['message'] = htmlspecialchars($output);
 header("Location: index.php");
 exit;
