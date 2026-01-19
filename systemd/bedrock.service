@@ -1,0 +1,16 @@
+[Unit]
+Description=Minecraft Bedrock Server
+After=network.target
+
+[Service]
+User=minecraft
+WorkingDirectory=/home/minecraft/Server
+ExecStart=/home/minecraft/Server/bedrock_server
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/home/minecraft/Server/logs/bedrock.log
+StandardError=append:/home/minecraft/Server/logs/error.log
+LimitNOFILE=100000
+
+[Install]
+WantedBy=multi-user.target
