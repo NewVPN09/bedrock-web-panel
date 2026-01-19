@@ -1,0 +1,9 @@
+www-data ALL=(root) NOPASSWD: \
+/bin/systemctl start bedrock, \
+/bin/systemctl stop bedrock, \
+/bin/systemctl restart bedrock, \
+/bin/systemctl status bedrock, \
+/usr/bin/tar, \
+/bin/rm, \
+/bin/cp, \
+/bin/mv
