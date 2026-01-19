@@ -5,9 +5,20 @@ if (!isset($_SESSION['auth'])) exit;
 csrf_check();
 
 $allowed = ['start','stop','restart'];
-$a = $_POST['action'] ?? '';
+$action = $_POST['action'] ?? '';
 
-if (!in_array($a, $allowed)) exit("Invalid");
+if (!in_array($action, $allowed)) exit("Invalid action");
 
-echo shell_exec("sudo systemctl $a bedrock");
+// Map each action to a non-blocking command
+$cmds = [
+    'start'   => "sudo systemctl start bedrock > /dev/null 2>&1 &",
+    'stop'    => "sudo systemctl stop bedrock > /dev/null 2>&1 &",
+    'restart' => "sudo systemctl restart bedrock > /dev/null 2>&1 &"
+];
+
+// Execute the command in background
+shell_exec($cmds[$action]);
+
+// Redirect back immediately
 header("Location: index.php");
+exit;
