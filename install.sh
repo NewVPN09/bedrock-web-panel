@@ -7,20 +7,20 @@ echo "[+] Starting fully automated Bedrock Web Panel + Server installation..."
 # 1️⃣ Install required packages
 # -------------------------
 apt update -y
-apt install -y nginx php php-fpm php-cli php-curl php-mbstring php-zip ufw netcat sudo unzip wget git id unzip &>/dev/null || useradd -m -s /bin/bash minecraft
+apt install -y nginx php php-fpm php-cli php-curl php-mbstring php-zip ufw netcat sudo unzip wget git id &>/dev/null || useradd -m -s /bin/bash minecraft
 
 # -------------------------
-# 2️⃣ Stop/Remove Apache if exists
+# 2️⃣ Stop/Remove Apache if present
 # -------------------------
 if systemctl is-active --quiet apache2; then
     echo "[!] Apache detected, removing..."
     systemctl stop apache2
     systemctl disable apache2
-    apt purge apache2 apache2-utils apache2-bin apache2.2-common -y
+    apt purge -y apache2 apache2-utils apache2-bin apache2.2-common
 fi
 
 # -------------------------
-# 3️⃣ Setup Minecraft server folder
+# 3️⃣ Setup Minecraft server directories
 # -------------------------
 mkdir -p /home/minecraft/Server
 mkdir -p /home/minecraft/backups
@@ -40,9 +40,9 @@ chmod +x bedrock_server
 chown -R minecraft:minecraft /home/minecraft/Server
 
 # -------------------------
-# 5️⃣ Setup systemd service
+# 5️⃣ Create systemd service
 # -------------------------
-cat > /etc/systemd/system/bedrock.service <<EOL
+cat > /etc/systemd/system/bedrock.service << 'EOF'
 [Unit]
 Description=Minecraft Bedrock Server
 After=network.target
@@ -51,7 +51,6 @@ After=network.target
 User=minecraft
 WorkingDirectory=/home/minecraft/Server
 ExecStart=/home/minecraft/Server/bedrock_server
-ExecStop=/bin/bash -c 'echo stop | /usr/bin/nc -u 127.0.0.1 19132'
 Restart=on-failure
 RestartSec=10
 StandardOutput=append:/home/minecraft/Server/logs/bedrock.log
@@ -60,58 +59,65 @@ LimitNOFILE=100000
 
 [Install]
 WantedBy=multi-user.target
-EOL
+EOF
 
 systemctl daemon-reload
 systemctl enable bedrock
 
 # -------------------------
-# 6️⃣ Setup sudoers for web panel
+# 6️⃣ Sudoers for web panel
 # -------------------------
-cat > /etc/sudoers.d/bedrock-panel <<EOL
-www-data ALL=(root) NOPASSWD: /bin/systemctl start bedrock, /bin/systemctl stop bedrock, /bin/systemctl restart bedrock, /bin/systemctl status bedrock
-EOL
+cat > /etc/sudoers.d/bedrock-panel << 'EOF'
+www-data ALL=(root) NOPASSWD: \
+/bin/systemctl start bedrock, \
+/bin/systemctl stop bedrock, \
+/bin/systemctl restart bedrock, \
+/bin/systemctl status bedrock
+EOF
 chmod 440 /etc/sudoers.d/bedrock-panel
 
 # -------------------------
-# 7️⃣ Setup web panel
+# 7️⃣ Setup web panel (all files from GitHub)
 # -------------------------
 rm -rf /var/www/panel
 mkdir -p /var/www/panel
 cd /var/www/panel
 
-# Download panel files from GitHub
-echo "[+] Downloading panel files..."
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/index.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/login.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/logout.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/control.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/status.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/logs.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/csrf.php
-wget -q https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/assets/style.css
+echo "[+] Downloading all web panel files..."
+FILES=(
+index.php login.php logout.php control.php status.php logs.php rcon.php
+players.php backup.php restore.php files.php upload.php delete.php csrf.php
+config.php sysinfo.php assets/style.css
+)
+
+for file in "${FILES[@]}"; do
+    # Detect if inside assets folder
+    if [[ "$file" == assets/* ]]; then
+        mkdir -p assets
+    fi
+    wget -q "https://raw.githubusercontent.com/NewVPN09/bedrock-web-panel/main/web/$file" -O "$file"
+done
 
 chown -R www-data:www-data /var/www/panel
 
 # -------------------------
-# 8️⃣ Create config.php with admin/mika
+# 8️⃣ Create config.php with admin/mika (overwrite downloaded one)
 # -------------------------
 HASH=$(php -r "echo password_hash('mika', PASSWORD_DEFAULT);")
-cat > /var/www/panel/config.php <<EOL
+cat > /var/www/panel/config.php << EOF
 <?php
 define('ADMIN_USER', 'admin');
 define('ADMIN_PASS_HASH', '$HASH');
 define('LOG_FILE', '/home/minecraft/Server/logs/bedrock.log');
-EOL
+EOF
 
 chown www-data:www-data /var/www/panel/config.php
 chmod 640 /var/www/panel/config.php
 
 # -------------------------
-# 9️⃣ Configure Nginx for panel
+# 9️⃣ Configure Nginx
 # -------------------------
-NGINX_CONF="/etc/nginx/sites-available/panel"
-cat > $NGINX_CONF <<EOL
+cat > /etc/nginx/sites-available/panel << 'EOF'
 server {
     listen 80;
     server_name _;
@@ -120,10 +126,10 @@ server {
     index index.php;
 
     location / {
-        try_files \$uri \$uri/ /index.php?\$args;
+        try_files $uri $uri/ /index.php?$args;
     }
 
-    location ~ \.php\$ {
+    location ~ \.php$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php-fpm.sock;
     }
@@ -132,7 +138,7 @@ server {
         deny all;
     }
 }
-EOL
+EOF
 
 ln -sf /etc/nginx/sites-available/panel /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
@@ -141,20 +147,17 @@ systemctl enable nginx
 systemctl restart nginx
 
 # -------------------------
-# 🔟 Setup firewall
+# 🔟 Firewall
 # -------------------------
 ufw allow 80/tcp
 ufw allow 19132/udp
 ufw --force enable
 
-# -------------------------
-# 1️⃣1️⃣ Start Bedrock server
-# -------------------------
+# Start Bedrock
 systemctl start bedrock
 
-# -------------------------
 echo "[✓] Installation complete!"
 echo "Web panel: http://YOUR_SERVER_IP/"
-echo "Login -> Username: admin | Password: mika"
+echo "Login: admin / mika"
 echo "Minecraft Bedrock server installed at /home/minecraft/Server/"
 echo "UDP Port: 19132"
